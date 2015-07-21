@@ -15,14 +15,14 @@ Sprite* Player::getSprite()
 
 void Player::init()
 {
-    _player = Sprite::create("stay1.png");
+    _player = Sprite::create("image/anim1/stay1.png");
     _player->setAnchorPoint(Vec2(0.5,0));
 
     Vector<SpriteFrame*> frameVector;
     for (int i = 1; i <= 5; i++)
     {
         char pngName[260] = {0};
-        sprintf(pngName, "stay%d.png", i);
+        sprintf(pngName, "image/anim1/stay%d.png", i);
         frameVector.pushBack(SpriteFrame::create(pngName, Rect(0,0,54,58)));
     }
     stay_animation = Animation::createWithSpriteFrames(frameVector, 0.1);
@@ -34,7 +34,7 @@ void Player::init()
     for (int i = 1; i <= 5; i++)
     {
         char pngName[260] = {0};
-        sprintf(pngName, "walk%d.png", i);
+        sprintf(pngName, "image/anim1/walk%d.png", i);
         frameVector.pushBack(SpriteFrame::create(pngName, Rect(0,0,54,58)));
     }
     walk_animation = Animation::createWithSpriteFrames(frameVector, 0.1);
