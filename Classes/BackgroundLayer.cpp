@@ -66,6 +66,11 @@ bool BackgroundLayer::init()
     my_player.setPosition(Vec2(visible_size.width/2, spriteSizeAt(0).height/4*3));
     this->addChild(my_player.getSprite(), 5);
     my_player.stay();
+
+    stick = Sprite::create("image/stick1.png");
+    stick->setAnchorPoint(Vec2(0.5, 0));
+    stick->setPosition(-stick->getContentSize().width, -stick->getContentSize().height);
+    this->addChild(stick, 5);
     return true;
 }
 
@@ -75,6 +80,8 @@ void BackgroundLayer::start(Ref* pSender)
     this->removeChild(game_name);
     MoveTo* stage_move = MoveTo::create(0.2, Vec2(100, spriteSizeAt(0).height/2));
     stage_sprite[0]->runAction(stage_move);
+    MoveTo* hero_move = MoveTo::create(0.2, hero_point());
+    my_player.getSprite()->runAction(hero_move);
     addStage();
     started = true;
 }
@@ -101,12 +108,12 @@ float BackgroundLayer::realSpriteWidthAt(int index)
 
 void BackgroundLayer::stageMove()
 {
-    int now_stage = (stage_number + 2) % 3;
-    int last_stage = (now_stage + 2) % 3;
+    now_stage = (stage_number + 2) % 3;
+    last_stage = (now_stage + 2) % 3;
 //    int next_stage = (now_stage + 1) % 3;
-    MoveTo* now_stage_move = MoveTo::create(0.2, Vec2(100, spriteSizeAt(0).height/2));
+    MoveTo* now_stage_move = MoveTo::create(0.2, Vec2(100, spriteSizeAt(now_stage).height/2));
     stage_sprite[now_stage]->runAction(now_stage_move);
-    MoveTo* last_stage_move = MoveTo::create(0.2, Vec2(-realSpriteWidthAt(last_stage), spriteSizeAt(0).height/2));
+    MoveTo* last_stage_move = MoveTo::create(0.2, Vec2(-realSpriteWidthAt(last_stage), spriteSizeAt(last_stage).height/2));
     stage_sprite[last_stage]->runAction(last_stage_move);
     addStage();
 }
@@ -114,7 +121,7 @@ void BackgroundLayer::stageMove()
 bool BackgroundLayer::onTouchBegan(Touch* pTouch, Event* pEvent)
 {
     if (started) {
-        stageMove();
+        addStick();
     }
     return true;
 }
@@ -125,6 +132,7 @@ void BackgroundLayer::onTouchMoved(Touch* pTouch, Event* pEvent)
 
 void BackgroundLayer::onTouchEnded(Touch* pTouch, Event* pEvent)
 {
+    stopStick();
 }
 
 float BackgroundLayer::randomFloat(float x)
@@ -132,3 +140,43 @@ float BackgroundLayer::randomFloat(float x)
     return static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/x));
 }
 
+void BackgroundLayer::addStick()
+{
+    stick->setPosition(stick_point());
+    this->schedule(schedule_selector(BackgroundLayer::stickLength));
+}
+
+void BackgroundLayer::stickLength(float length)
+{
+    stick->setScaleY(stick->getScaleY()+1);
+}
+
+void BackgroundLayer::stopStick()
+{
+    touch_length = stick->getContentSize().height * stick->getScaleY();
+    this->unschedule(schedule_selector(BackgroundLayer::stickLength));
+    rotate_stick_and_go();
+}
+
+Vec2 BackgroundLayer::stick_point()
+{
+    return Vec2(100 + realSpriteWidthAt(last_stage)/2, spriteSizeAt(last_stage).height);
+}
+
+Vec2 BackgroundLayer::hero_point()
+{
+    return Vec2(100 + realSpriteWidthAt(last_stage)/2-10-my_player.getSprite()->getContentSize().width/2, spriteSizeAt(last_stage).height);
+}
+
+void BackgroundLayer::rotate_stick_and_go()
+{
+    float dest_length_min = fabsf(stage_sprite[last_stage]->getPositionX() - stage_sprite[now_stage]->getPositionX()) - realSpriteWidthAt(last_stage)/2 - realSpriteWidthAt(now_stage)/2;
+    float dest_length_max = dest_length_min + realSpriteWidthAt(now_stage);
+    RotateTo* ro_stick = RotateTo::create(1,90);
+    RotateTo* ro_down_stick = RotateTo::create(1,180);
+    if (touch_length < dest_length_min || touch_length > dest_length_max) {
+        stick->runAction(ro_down_stick);
+    } else {
+        stick->runAction(ro_stick);
+    }
+}
